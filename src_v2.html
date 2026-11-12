@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLosed LOOp - Junior Astronaut Mission Trainer</title>
+<style>
+/* ===================== STYLES (edit colours here) ===================== */
+:root{
+  --bg:#04060a; --panel:#0a0f18; --panel2:#101826; --line:#1f2c44;
+  --text:#f4f7fc; --mute:#93a3c0; --gold:#fc3d21; /* --gold is now the NASA red accent */
+  --blue:#4d9bff; --nasa:#0b3d91; --sun:#ffc94d;
+  --ok:#3ddc97; --warn:#ffb020; --crit:#ff5468;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,Segoe UI,Roboto,sans-serif}
+h1,h2,h3{margin:0;font-weight:600}
+button{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+button:hover{border-color:var(--blue)}
+button.primary{background:var(--nasa);color:#fff;border-color:var(--blue);font-weight:600}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.wrap{max-width:1280px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.brand{font-size:12px;letter-spacing:.14em;color:var(--gold)}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--line);font-size:13px}
+.badge.sun{color:var(--sun);border-color:var(--sun)} .badge.night{color:var(--blue);border-color:var(--blue)}
+.layout{display:grid;gap:14px;grid-template-columns:1.3fr 1fr;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+@media(max-width:900px){.layout{display:flex;flex-direction:column}.col{display:contents}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top{margin-bottom:14px;display:grid;gap:14px;grid-template-columns:1.3fr 1fr}
+@media(max-width:900px){.top{grid-template-columns:1fr}}
+.alerts{display:flex;flex-direction:column;gap:6px;max-height:190px;overflow:auto}
+.alert{padding:8px 10px;border-radius:8px;border-left:4px solid var(--blue);background:var(--panel2);font-size:14px}
+.alert.warn{border-color:var(--warn)} .alert.crit{border-color:var(--crit)}
+.advisor{border-color:#1c4b8f}
+.advisor li{margin:4px 0}
+.advisor ul{margin:0;padding-left:18px}
+
+/* scene */
+#scene{width:100%;height:auto;display:block;border-radius:10px;background:#050812}
+.sceneWrap.flash #scene{animation:flash .7s ease}
+@keyframes flash{0%{filter:brightness(2.2)}100%{filter:brightness(1)}}
+.streak{animation:fall 1.1s linear infinite}
+@keyframes fall{from{transform:translate(0,-30px);opacity:1}to{transform:translate(-90px,330px);opacity:0}}
+.puff{animation:puff 1.8s ease-out infinite}
+@keyframes puff{from{transform:translate(0,0);opacity:.9}to{transform:translate(18px,-46px);opacity:0}}
+.blink{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.planline{margin-top:8px;font-size:13px;color:var(--mute)}
+.planline b{color:var(--text)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--mute);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* meters */
+.meters{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.meter{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+.meter .lab{font-size:12px;color:var(--mute)}
+.meter .val{font-size:22px;font-weight:600;margin:2px 0 6px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.meter .val small{font-size:12px;color:var(--mute);font-weight:400}
+.dl{font-size:12px;font-weight:600}.dl.good{color:var(--ok)}.dl.bad{color:var(--crit)}
+.bar{height:6px;background:#0a1020;border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--ok)}
+.meter.warn{border-color:var(--warn)} .meter.warn .bar i{background:var(--warn)}
+.meter.crit{border-color:var(--crit)} .meter.crit .bar i{background:var(--crit)}
+.meter .det{display:none;font-size:12px;color:var(--mute);margin-top:6px}
+body.details .meter .det{display:block}
+.meter .det em{color:var(--text);font-style:normal}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--mute)}
+.chip.bad{color:var(--crit);border-color:var(--crit)}
+
+/* orders */
+.row{display:flex;align-items:center;gap:8px;margin:8px 0}
+.row label{flex:0 0 118px;color:var(--text);font-size:13px}
+.row input[type=range]{flex:1;min-width:0}
+.row .n{flex:0 0 40px;text-align:right}
+.q{flex:0 0 22px;width:22px;height:22px;padding:0;border-radius:50%;font-size:12px;color:var(--blue);border-color:var(--blue);line-height:1}
+.help{display:none;font-size:13px;background:#08142a;border:1px solid #1f4a8f;border-radius:8px;padding:8px 10px;margin:-2px 0 8px;color:#c9d7f2}
+.help.show{display:block}
+.help b{color:#fff}
+.prio{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.prio li{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+.prio li span{flex:1;text-transform:capitalize}
+.prio button{padding:1px 8px}
+.sub{font-size:12px;color:var(--mute);margin:2px 0 6px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.shelter{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;border:1px solid var(--line);margin-top:10px}
+.shelter.storm{border-color:var(--crit);background:#2a0f17}
+.sec{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin:14px 0 4px;display:flex;align-items:center;gap:8px}
+
+/* consequences */
+.cons{display:flex;flex-direction:column;gap:8px}
+.cl{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--panel2);border-left:4px solid var(--blue);border-radius:8px;padding:8px 10px;font-size:13px}
+.cl.good{border-color:var(--ok)}.cl.bad{border-color:var(--crit)}.cl.warn{border-color:var(--warn)}
+.cl .t{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-bottom:2px}
+@media(max-width:560px){.cl{grid-template-columns:1fr}}
+.empty{color:var(--mute);font-size:14px}
+
+/* trends */
+.trends{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.tr{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.tr .lab{font-size:12px;color:var(--mute);display:flex;justify-content:space-between}
+.tr svg{width:100%;height:46px;display:block;margin-top:4px}
+
+/* overlays and tour */
+.overlay{position:fixed;inset:0;background:rgba(3,6,12,.82);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+.overlay.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:620px;width:100%;max-height:88vh;overflow:auto;padding:20px}
+.modal h2{font-size:20px;margin-bottom:8px;text-transform:none;letter-spacing:0;color:var(--text)}
+.scen{display:grid;gap:10px;margin:12px 0}
+.scen button{text-align:left;padding:12px}
+.scen b{display:block}
+.scen span{color:var(--mute);font-size:13px}
+.win{color:var(--ok)} .lose{color:var(--crit)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+td,th{padding:4px 6px;text-align:left;border-bottom:1px solid var(--line)}
+.toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute)}
+.tour{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);width:min(560px,calc(100% - 24px));background:#0a1220;border:2px solid var(--blue);border-radius:14px;padding:14px 16px;z-index:20;display:none;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.tour.show{display:block}
+.tour h3{color:#fff;margin-bottom:4px}
+.tour p{margin:4px 0 10px}
+.tour .nav{display:flex;gap:8px;justify-content:space-between;align-items:center}
+.tour .step{font-size:12px;color:var(--mute)}
+.stat{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:999px;border:1px solid;white-space:nowrap}
+.stat.sourced{color:var(--ok);border-color:var(--ok)}.stat.derived{color:var(--blue);border-color:var(--blue)}
+.stat.scaled{color:var(--sun);border-color:var(--sun)}.stat.assumption{color:var(--warn);border-color:var(--warn)}
+.srcmodal{max-width:860px}
+.srcmodal td a{color:var(--blue)}
+.srcmodal .note{font-size:12px;color:var(--mute);margin-top:10px}
+.hint{position:fixed;left:14px;bottom:14px;max-width:360px;background:#08142a;border:1px solid var(--blue);border-left:4px solid var(--blue);border-radius:10px;padding:10px 12px;z-index:15;display:none;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.6)}
+.hint.show{display:block}
+.hint b{display:block;color:#fff;margin-bottom:2px}
+.hint button{margin-top:8px;padding:3px 10px;font-size:12px}
+.tour-hl{outline:3px solid var(--blue);outline-offset:3px;border-radius:12px;position:relative;z-index:5}
+</style>
+</head>
+<body class="details">
+<div class="wrap">
+  <header>
+    <div>
+      <div class="brand">CLosed LOOp &middot; Junior Astronaut Mission Trainer</div>
+      <h1 id="title">Lunar Outpost</h1>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span class="badge" id="dayBadge">Day -</span>
+      <span class="badge" id="sunBadge">-</span>
+      <label class="toggle" title="Show an explanation and days-left estimate on every meter"><input type="checkbox" id="detailsToggle" checked> Explain meters</label>
+      <button id="srcBtn" title="Where every number in the game comes from">Data sources</button>
+      <button id="helpBtn">How to play</button>
+      <button id="menuBtn">Missions</button>
+      <button id="restartBtn">Restart mission</button>
+    </div>
+  </header>
+
+  <div class="top">
+    <div class="card" id="alertsCard"><h2>Alerts <span class="sub" style="margin:0;text-transform:none;letter-spacing:0">Read these first, every day</span></h2><div class="alerts" id="alerts"></div></div>
+    <div class="card advisor" id="advisorCard" style="display:none"><h2>Mission advisor <span class="sub" style="margin:0;text-transform:none;letter-spacing:0">training mission only</span></h2><ul id="advisor"></ul></div>
+  </div>
+
+  <div class="layout">
+    <div class="col">
+      <div class="card" id="sceneCard" style="order:1">
+        <h2>Outpost view <span class="sub" style="margin:0;text-transform:none;letter-spacing:0">updates live as you change orders</span></h2>
+        <div class="sceneWrap" id="sceneWrap"><canvas id="scene" role="img" aria-label="Lunar outpost, live view"></canvas></div>
+        <div class="planline" id="planLine"></div>
+        <div class="legend"><span>Labels name each system.</span><span>The soil bank around the habitat is your radiation shielding: thicker is safer.</span><span>Brown dust on the panels means only 60% power.</span></div>
+      </div>
+      <div class="card" id="metersCard" style="order:4">
+        <h2>Outpost status <span class="sub" style="margin:0;text-transform:none;letter-spacing:0">arrows show change since your last move</span></h2>
+        <div class="meters" id="meters"></div>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="card" id="trendsCard" style="order:5">
+        <h2>Trends <span class="sub" style="margin:0;text-transform:none;letter-spacing:0">day by day, since the mission began</span></h2>
+        <div class="trends" id="trends"></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card" id="ordersCard" style="order:2">
+        <h2>Today's orders <button class="q" id="whatOrders" title="What are orders?">?</button></h2>
+        <div class="help" id="help_orders"><b>You are mission control.</b> You never move the astronauts yourself. Each day you decide how they spend their time and where the power goes, then press <b>End day</b> and the outpost lives through 24 hours. Every number you set changes the picture on the left.</div>
+
+        <div class="sec">Crew hours <button class="q" data-help="hours" title="Explain crew hours">?</button></div>
+        <div class="help" id="help_hours"><b>4 astronauts &times; 8 h = 32 h</b> is a normal working day. You can order up to 40 h, but anything above 32 h is overtime and builds fatigue. Tired crews get hurt. Press the <b>?</b> on each line to see what that job does.</div>
+        <div id="hours"></div>
+        <div class="row"><label>Hours used</label><div id="hoursUsed" style="flex:1"></div></div>
+
+        <div class="shelter" id="shelterBox">
+          <input type="checkbox" id="shelter">
+          <div><b>Shelter the crew</b><div class="sub" style="margin:0">Hide underground today.</div></div>
+          <button class="q" data-help="shelter" title="Explain shelter" style="margin-left:auto">?</button>
+        </div>
+        <div class="help" id="help_shelter"><b>What:</b> the whole crew goes into the underground storm shelter. <b>Why:</b> during a solar storm this cuts the radiation dose to 15%. <b>Cost:</b> nobody can work outside, so no shielding and no panel cleaning today. Do not shelter on quiet days unless you have to.</div>
+
+        <div class="sec">Greenhouse lights <button class="q" data-help="gh" title="Explain greenhouse lights">?</button></div>
+        <div class="help" id="help_gh"><b>What:</b> brightness of the grow lights, from 0 to 100%. <b>Why:</b> bright lights grow crops that give food and oxygen and absorb CO2. <b>Cost:</b> the lights use a lot of power (up to 120 kWh a day). During the lunar night, when there is no solar power, dimming them saves the battery. Crops left in the dark for 2 days die.</div>
+        <div class="row"><label>Light level</label><input type="range" id="ghLevel" min="0" max="100" step="5"><span class="n" id="ghLevelN"></span></div>
+
+        <div class="sec">Power priority <button class="q" data-help="prio" title="Explain power priority">?</button></div>
+        <div class="help" id="help_prio"><b>What:</b> the order in which systems get electricity. <b>Why:</b> when the power supply is short, systems at the <b>top</b> are served first and the ones at the bottom get cut. <b>Tip:</b> keep heat, air and water above the greenhouse. Use Up and Down to re-order.</div>
+        <ul class="prio" id="prio"></ul>
+
+        <div class="actions">
+          <button class="primary" id="endDay" title="Run 24 hours with these orders">End day</button>
+          <button id="skip" title="Repeat today's orders until something new happens">Skip ahead</button>
+          <button class="q" data-help="end" title="Explain End day and Skip ahead">?</button>
+        </div>
+        <div class="help" id="help_end" style="margin-top:8px"><b>End day:</b> locks in your orders and runs one day. <b>Skip ahead:</b> repeats the same orders day after day, and stops by itself when something new appears (an alert, a storm, a breakdown) or after 7 days. Use it when everything is calm, not when trouble is coming.</div>
+      </div>
+
+      <div class="card" id="consCard" style="order:3">
+        <h2>What you did &rarr; what happened</h2>
+        <div class="cons" id="cons"><div class="empty">Set your orders, then press <b>End day</b>. This panel will explain what each of your decisions did.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="endOv"><div class="modal" id="endBox"></div></div>
+<div class="overlay show" id="menuOv"><div class="modal">
+  <div class="brand">CLosed LOOp</div>
+  <h2>Choose a mission</h2>
+  <div class="sub">You are mission control for a 4-person lunar outpost. Keep the crew alive. One bad decision can end the mission. New to this? Start with First Week.</div>
+  <div class="scen" id="scen"></div>
+</div></div>
+<div class="overlay" id="srcOv"><div class="modal srcmodal" id="srcBox"></div></div>
+<div class="tour" id="tour"></div>
+<div class="hint" id="hint"></div>
+
+<!-- ===================== SIMULATION DATA AND ENGINE (generated from config.js and engine.js) ===================== -->
+<script>
+/*__CONFIG__*/
+</script>
+<script>
+/*__ENGINE__*/
+</script>
+<script>
+/*__SCENE__*/
+</script>
+
+<!-- ===================== DASHBOARD LOGIC ===================== -->
+<script>
+(function () {
+  const K = SimConfig.CONFIG;
+  const $ = (id) => document.getElementById(id);
+  const R1 = (x) => Math.round(x * 10) / 10;
+  const NORMAL = K.crew.normalHours * K.crewSize;
+
+  // ---- text shown to the player (edit freely) ----
+  const HOUR_TASKS = [
+    ['maintenance', 'Maintenance', '<b>What:</b> servicing machines. <b>Why:</b> equipment wears out a little every day. About 4 h a day keeps wear flat. Too little and the water recycler slowly recovers less water.'],
+    ['greenhouse', 'Tend crops', '<b>What:</b> planting, watering and picking. <b>Why:</b> crops only grow if they get at least 4 h of care AND enough power for their lights. Mature crops give food and oxygen and absorb CO2.'],
+    ['shielding', 'Build shielding', '<b>What:</b> piling moon soil on the habitat. Each hour adds 1 cm. <b>Why:</b> thicker cover means less cosmic radiation every day, and strong protection from solar storms. <b>Outdoor job:</b> not possible while sheltering.'],
+    ['cleaning', 'Clean panels', '<b>What:</b> brushing dust off the solar panels. <b>Why:</b> dusty panels make only 60% power. It takes 4 h in total to clean them. Only needed after a dust alert. <b>Outdoor job.</b>'],
+    ['repair', 'Repairs', '<b>What:</b> fixing breakdowns: the water recycler (8 h) or a hull leak (6 h). <b>Why:</b> a broken recycler stops recycling water, and a leak lets air escape. Hours spent when nothing is broken are wasted.']
+  ];
+  const METER_HELP = {
+    power: 'Stored electricity. Sunlight charges it by day. At night it only drains. At zero, life support shuts down.',
+    oxygen: 'Spare oxygen. The oxygen generator and the crops add to it. The crew breathes it all day.',
+    water: 'Clean water for drinking and hygiene. The recycler recovers used water. Crops and the oxygen generator use some too.',
+    food: 'Stored meals plus whatever the greenhouse grows. The crew eats about 11 k kcal a day.',
+    co2: 'The crew breathes out CO2. The scrubber removes it. Above 5 kg it hurts the crew.',
+    temp: 'Cabin heating needs power. Below 10 C it hurts the crew.',
+    dose: 'Total radiation absorbed this mission. 150 mSv is a warning, 300 is critical. It never goes down.',
+    fatigue: 'Tiredness from overtime. Resting days reduce it. Above 70% it hurts the crew.',
+    health: 'Crew health. If it reaches 0 the mission is lost.'
+  };
+  const DESC = {
+    first_week: 'Training mission. 7 days. The advisor helps you learn the controls.',
+    survive_night: '20 days. The lunar night is coming. Plan your power.',
+    solar_storm: '14 days. Particle storms. Shelter and shielding matter.',
+    august_1972: 'HISTORIC. 10 days. A re-run of the real August 1972 solar storm, one of the biggest ever recorded. Shelter AND shielding decide who lives.',
+    thirty_day: '30 days. Everything goes wrong at some point.'
+  };
+  const CAUSE = {
+    oxygen: 'ran out of oxygen', co2: 'was poisoned by CO2 build-up', water: 'ran out of drinking water',
+    food: 'starved', cold: 'froze', radiation: 'took too much radiation', fatigue: 'was exhausted from overwork'
+  };
+  const DMG_WHY = {
+    oxygen: ['Oxygen ran out.', 'People cannot live without oxygen. Keep the generator powered and the leak sealed.'],
+    co2: ['CO2 in the cabin is too high.', 'The scrubber was short of power. Raise it in the priority list.'],
+    water: ['There was not enough drinking water.', 'Repair the recycler and keep it powered.'],
+    food: ['There was not enough food.', 'Keep the greenhouse growing or wait for a supply lander.'],
+    cold: ['The cabin got too cold.', 'Heating was cut. Put thermal at the top of the power priority.'],
+    radiation: ['The crew absorbed a harmful radiation dose.', 'Build shielding early and shelter during storms.'],
+    fatigue: ['The crew is exhausted.', 'Stop ordering overtime and let them rest.']
+  };
+  const TOUR = [
+    { sel: null, title: 'Welcome, Commander', text: 'Keep your 4 astronauts alive until the last day. Each day: read the alerts, set your orders, press End day.' },
+    { sel: '#ordersCard', title: 'Your orders', text: 'Spend crew hours, set the grow lights and choose what gets power first. Press the ? beside anything to learn what it does.' },
+    { sel: '#alertsCard', title: 'Watch the alerts', text: 'Red means danger now. After each day, the panel under your orders explains what every decision did. Good luck!' }
+  ];
+  // Short tips that pop up only the first time something happens (edit the wording here)
+  const HINTS = {
+    storm: ['Solar storm today', 'Tick "Shelter the crew" to cut the radiation dose. Nobody can work outside while sheltering.'],
+    dust: ['Dust on the solar panels', 'Panels give only 60% power until cleaned. Put 4 h into "Clean panels".'],
+    recycler: ['Water recycler broken', 'Used water is no longer recycled. Put 8 h into "Repairs".'],
+    leak: ['Hull leak', 'Air is escaping. Put 6 h into "Repairs" to seal it.'],
+    night: ['Lunar night is near', 'No sunlight for about two weeks. Dim the grow lights and watch the battery.'],
+    overtime: ['Overtime', 'A normal day is 32 h. More tires the crew, and tired crews get hurt.'],
+    fatigue: ['The crew is getting tired', 'Order 32 h or less so they can rest.']
+  };
+
+  let mission = null, scenarioId = null, orders = null, lastAlertKeys = {};
+  let baseline = null, hist = [], tourIdx = -1, prevMat = 0;
+
+  // ---------- helpers ----------
+  const snap = () => ({
+    battery: mission.battery, o2: mission.o2, water: mission.water, food: mission.food / 1000, co2: mission.co2,
+    temp: mission.temp, dose: mission.dose, fatigue: mission.fatigue, health: mission.health,
+    shield: mission.shieldCm, mat: mission.greenhouse.maturity, wear: mission.wear,
+    dust: mission.dust.active, cleaned: mission.dust.cleaned,
+    broken: mission.recycler.broken, recProg: mission.recycler.progress,
+    leak: mission.leak.active, leakProg: mission.leak.progress, storm: mission.today.spe
+  });
+  const ROWKEY = { power: 'battery', oxygen: 'o2', water: 'water', food: 'food', co2: 'co2', temp: 'temp', dose: 'dose', fatigue: 'fatigue', health: 'health' };
+  const LOWER_BETTER = { co2: 1, dose: 1, fatigue: 1 };
+  const sumHours = (h) => Object.values(h).reduce((a, b) => a + b, 0);
+  const alertKey = (a) => a.sev + '|' + a.msg.replace(/[0-9.]+/g, '#');
+  const pct = (x) => Math.round(x * 100);
+
+  // ---------- menu / start ----------
+  function buildMenu() {
+    const box = $('scen'); box.innerHTML = '';
+    Object.keys(Sim.SCENARIOS).forEach((id) => {
+      const sc = Sim.SCENARIOS[id];
+      const b = document.createElement('button');
+      b.innerHTML = '<b>' + sc.name + '</b><span>' + (DESC[id] || '') + '</span>';
+      b.onclick = () => start(id);
+      box.appendChild(b);
+    });
+  }
+  function start(id) {
+    scenarioId = id;
+    mission = Sim.createMission(id, Math.floor(Math.random() * 1e6) + 1);
+    orders = Sim.defaultOrders();
+    lastAlertKeys = {}; baseline = null; hist = [];
+    $('menuOv').classList.remove('show'); $('endOv').classList.remove('show');
+    $('cons').innerHTML = '<div class="empty">Set your orders, then press <b>End day</b>. This panel will explain what each of your decisions did.</div>';
+    beginDay(true);
+    let seen = false; try { seen = localStorage.getItem('cl_tour_seen') === '1'; } catch (e) {}
+    if (!seen) tourStart();
+  }
+  function beginDay(first) {
+    const r = Sim.startDay(mission);
+    lastAlertKeys = {}; r.alerts.forEach((a) => { lastAlertKeys[alertKey(a)] = 1; });
+    $('shelter').checked = false; orders.shelter = false;
+    if (first) { histPush(); prevMat = mission.greenhouse.maturity; }
+    render(r);
+  }
+  function histPush() { const s = snap(); s.day = mission.day; hist.push(s); }
+
+  // ---------- render ----------
+  function render(startRes) {
+    const st = Sim.getStatus(mission);
+    $('title').textContent = mission.name;
+    $('dayBadge').textContent = 'Day ' + st.day + ' / ' + st.length;
+    const sb = $('sunBadge');
+    sb.className = 'badge ' + (st.sunlit ? 'sun' : 'night');
+    sb.textContent = st.sunlit ? 'Sunlit (night in ' + Math.ceil(st.daysToNight) + ' d)' : 'Lunar night (' + Math.ceil(st.nightLeft) + ' d left)';
+
+    const al = $('alerts'); al.innerHTML = '';
+    const list = (startRes && startRes.alerts) || mission.today.alerts;
+    if (!list.length) al.innerHTML = '<div class="alert">All systems normal.</div>';
+    const rank = { crit: 0, warn: 1, info: 2 };
+    list.slice().sort((a, b) => rank[a.sev] - rank[b.sev]).forEach((a) => {
+      const d = document.createElement('div'); d.className = 'alert ' + a.sev; d.textContent = a.msg; al.appendChild(d);
+    });
+
+    renderMeters(st); renderOrders(); renderScene(); renderTrends(); renderAdvisor(st); checkHints(st);
+  }
+
+  function renderMeters(st) {
+    const m = $('meters'); m.innerHTML = '';
+    const maxes = { power: K.power.batteryCapacityKWh, oxygen: 120, water: 800, food: K.start.foodKcal / 1000 + 50, co2: 12, temp: 25, dose: 300, fatigue: 100, health: 100 };
+    const now = snap();
+    st.rows.forEach((r) => {
+      const pctv = Math.max(0, Math.min(100, (r.value / (maxes[r.id] || 100)) * 100));
+      const d = document.createElement('div');
+      d.className = 'meter ' + (r.level === 'ok' ? '' : r.level);
+      let delta = '';
+      if (baseline) {
+        const k = ROWKEY[r.id], dv = now[k] - baseline[k];
+        if (Math.abs(dv) >= 0.05) {
+          const up = dv > 0, good = LOWER_BETTER[r.id] ? !up : up;
+          delta = '<span class="dl ' + (good ? 'good' : 'bad') + '">' + (up ? '&#9650; ' : '&#9660; ') + R1(Math.abs(dv)) + '</span>';
+        }
+      }
+      const det = [];
+      det.push('<em>' + METER_HELP[r.id] + '</em>');
+      if (r.daysLeft !== null) det.push('About ' + R1(r.daysLeft) + ' days left at this rate.');
+      if (r.note) det.push(r.note + '.');
+      d.innerHTML = '<div class="lab">' + r.label + '</div><div class="val">' + r.value + ' <small>' + r.unit + '</small>' + delta + '</div>' +
+        '<div class="bar"><i style="width:' + pctv + '%"></i></div><div class="det">' + det.join(' ') + '</div>';
+      m.appendChild(d);
+    });
+    const chips = $('chips'); chips.innerHTML = '';
+    const chip = (t, bad) => { const c = document.createElement('span'); c.className = 'chip' + (bad ? ' bad' : ''); c.textContent = t; chips.appendChild(c); };
+    chip('Crops ' + pct(st.greenhouse) + '% mature');
+    chip('Shielding ' + st.shieldCm + ' cm');
+    chip(st.dust ? 'Panels dusty' : 'Panels clean', st.dust);
+    chip(st.recyclerBroken ? 'Recycler BROKEN' : 'Recycler OK', st.recyclerBroken);
+    chip(st.leak ? 'Hull LEAK' : 'Hull sealed', st.leak);
+  }
+
+  const hoursUsed = () => HOUR_TASKS.reduce((a, t) => a + (orders.hours[t[0]] || 0), 0);
+
+  function renderOrders() {
+    const hb = $('hours'); hb.innerHTML = '';
+    HOUR_TASKS.forEach(([id, label, tip]) => {
+      const wrap = document.createElement('div');
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label>' + label + '</label><input type="range" min="0" max="24" step="1"><span class="n"></span><button class="q" title="What does this do?">?</button>';
+      const help = document.createElement('div'); help.className = 'help'; help.innerHTML = tip;
+      const inp = row.querySelector('input'), n = row.querySelector('.n');
+      inp.value = orders.hours[id] || 0; n.textContent = inp.value + ' h';
+      inp.oninput = () => {
+        let v = +inp.value;
+        const others = hoursUsed() - (orders.hours[id] || 0);
+        v = Math.min(v, K.crew.maxHours - others);
+        inp.value = v; orders.hours[id] = v; n.textContent = v + ' h';
+        updateHoursUsed(); renderScene();
+      };
+      row.querySelector('.q').onclick = () => help.classList.toggle('show');
+      wrap.appendChild(row); wrap.appendChild(help); hb.appendChild(wrap);
+    });
+    updateHoursUsed();
+
+    const gl = $('ghLevel'); gl.value = Math.round(orders.greenhouseLevel * 100);
+    $('ghLevelN').textContent = gl.value + '%';
+    gl.oninput = () => { orders.greenhouseLevel = gl.value / 100; $('ghLevelN').textContent = gl.value + '%'; renderScene(); };
+
+    $('shelterBox').classList.toggle('storm', mission.today.spe > 0);
+    $('shelter').onchange = () => { orders.shelter = $('shelter').checked; renderScene(); };
+    $('shelter').checked = !!orders.shelter;
+
+    const pl = $('prio'); pl.innerHTML = '';
+    orders.priority.forEach((id, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = '<span>' + (i + 1) + '. ' + id + '</span><button>Up</button><button>Down</button>';
+      const [up, down] = li.querySelectorAll('button');
+      up.disabled = i === 0; down.disabled = i === orders.priority.length - 1;
+      up.onclick = () => swap(i, i - 1); down.onclick = () => swap(i, i + 1);
+      pl.appendChild(li);
+    });
+  }
+  function swap(a, b) { const p = orders.priority; [p[a], p[b]] = [p[b], p[a]]; renderOrders(); }
+  function updateHoursUsed() {
+    const used = hoursUsed(), el = $('hoursUsed');
+    el.textContent = used + ' / ' + K.crew.maxHours + ' h' + (used > NORMAL ? '  (overtime: tiring)' : '  (normal day: ' + NORMAL + ' h)');
+    el.style.color = used > NORMAL ? 'var(--warn)' : 'var(--text)';
+    if (used > NORMAL) hint('overtime');
+  }
+  document.querySelectorAll('.q[data-help]').forEach((b) => { b.onclick = () => $('help_' + b.dataset.help).classList.toggle('show'); });
+  $('whatOrders').onclick = () => $('help_orders').classList.toggle('show');
+
+  // ---------- outpost scene (drawn by scene.js on a canvas) ----------
+  function renderScene() {
+    if (!mission || !window.Scene) return;
+    const st = Sim.getStatus(mission), h = orders.hours, sh = orders.shelter;
+    const dig = !sh && h.shielding > 0, clean = !sh && h.cleaning > 0;
+    let rp = h.repair;
+    const repRec = mission.recycler.broken && rp > 0;
+    if (repRec) rp -= Math.min(rp, K.repair.recyclerHours - mission.recycler.progress);
+    const repLeak = mission.leak.active && rp > 0;
+    const dying = orders.greenhouseLevel < 0.05 || mission.greenhouse.maturity < prevMat - 0.001 || mission.greenhouse.darkDays > 0;
+    Scene.set({
+      sunlit: st.sunlit, storm: mission.today.spe > 0, shelter: sh, dig: dig, clean: clean,
+      repairRecycler: repRec, repairLeak: repLeak, tend: !sh && h.greenhouse > 0,
+      shieldCm: mission.shieldCm, maxShieldCm: K.radiation.maxShieldCm,
+      dust: mission.dust.active, dustCleaned: mission.dust.cleaned / K.repair.dustCleanHours,
+      broken: mission.recycler.broken, leak: mission.leak.active,
+      mat: mission.greenhouse.maturity, dying: dying, light: orders.greenhouseLevel,
+      tempC: mission.temp, powered: mission.battery > 1 || st.sunlit,
+      battery: Math.max(0, Math.min(1, mission.battery / K.power.batteryCapacityKWh)),
+      labels: true, shieldLabel: 'HABITAT - SHIELD ' + Math.round(mission.shieldCm) + ' CM',
+      dustLabel: mission.dust.active ? 'SOLAR ARRAY - DUSTY' : 'SOLAR ARRAY'
+    });
+    const parts = [];
+    if (sh) parts.push('<b>all 4 crew sheltering underground</b>');
+    else {
+      if (dig) parts.push('<b>2 crew piling soil</b> on the habitat');
+      if (clean) parts.push('<b>2 crew cleaning</b> the panels');
+      if (repRec) parts.push('<b>1 crew repairing</b> the recycler');
+      if (repLeak) parts.push('<b>1 crew sealing</b> the leak');
+      if (!dig && !clean && !repRec && !repLeak) parts.push('<b>everyone working inside</b>');
+    }
+    parts.push('crop lights at <b>' + pct(orders.greenhouseLevel) + '%</b>');
+    $('planLine').innerHTML = 'Your plan right now: ' + parts.join(', ') + '.';
+  }
+
+  // ---------- trends ----------
+  function spark(vals, color) {
+    const w = 200, hgt = 46, p = 3, max = Math.max.apply(null, vals.concat([1e-6]));
+    const X = (i) => (vals.length === 1 ? w / 2 : p + (w - 2 * p) * i / (vals.length - 1));
+    const Y = (v) => hgt - p - (hgt - 2 * p) * (v / max);
+    if (vals.length === 1) return '<svg viewBox="0 0 ' + w + ' ' + hgt + '" preserveAspectRatio="none"><circle cx="' + X(0) + '" cy="' + Y(vals[0]) + '" r="3" fill="' + color + '"/></svg>';
+    const pts = vals.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1)).join(' ');
+    return '<svg viewBox="0 0 ' + w + ' ' + hgt + '" preserveAspectRatio="none"><polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="' + X(vals.length - 1) + '" cy="' + Y(vals[vals.length - 1]) + '" r="3.5" fill="' + color + '"/></svg>';
+  }
+  function renderTrends() {
+    const defs = [['battery', 'Battery (kWh)', '#ffcf5a'], ['o2', 'Oxygen (kg)', '#4cc2ff'], ['water', 'Water (L)', '#6fa8ff'], ['food', 'Food (k kcal)', '#3ddc97'],
+      ['co2', 'CO2 (kg)', '#c9a0ff'], ['dose', 'Radiation total (mSv)', '#ff9a5c'], ['fatigue', 'Fatigue (%)', '#ffb020'], ['health', 'Crew health (%)', '#ff5468']];
+    $('trends').innerHTML = defs.map(([k, lab, c]) => {
+      const vals = hist.map((x) => x[k]);
+      return '<div class="tr"><div class="lab"><span>' + lab + '</span><b style="color:var(--text)">' + R1(vals[vals.length - 1]) + '</b></div>' + spark(vals, c) + '</div>';
+    }).join('');
+  }
+
+  // ---------- advisor (training only) ----------
+  function renderAdvisor(st) {
+    const sc = Sim.SCENARIOS[scenarioId], card = $('advisorCard');
+    if (!sc || !sc.training) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const tips = [];
+    if (mission.today.spe > 0) tips.push('A solar storm is hitting today. Tick <b>Shelter the crew</b>.');
+    if (mission.dust.active) tips.push('Dust is on the panels. Put <b>4 h</b> into <b>Clean panels</b> to get full power back.');
+    if (mission.recycler.broken) tips.push('The recycler is broken. Put <b>8 h</b> into <b>Repairs</b>.');
+    if (mission.leak.active) tips.push('Air is leaking. Put <b>6 h</b> into <b>Repairs</b>.');
+    if (mission.fatigue > 50) tips.push('The crew is tired. Order <b>32 h or less</b> today so they can rest.');
+    if (mission.day === 1) tips.push('Look at the picture and the meters. Then press <b>End day</b> with the default orders and read the <b>What you did &rarr; what happened</b> panel.');
+    if (mission.day >= 2 && mission.shieldCm < 30 && !tips.length) tips.push('Quiet day. Try <b>12 h</b> of <b>Build shielding</b> and watch the soil layer grow on the habitat.');
+    if (!tips.length) tips.push('All stable. Experiment with one setting and see what changes in the panel.');
+    $('advisor').innerHTML = tips.slice(0, 3).map((t) => '<li>' + t + '</li>').join('');
+  }
+
+  // ---------- cause and effect ----------
+  function explainDay(pre, post, used, rep) {
+    const L = [], add = (tone, did, res) => L.push({ tone, did, res });
+    const h = used.hours, sh = used.shelter, H = (x) => R1(x) + ' h';
+    const total = sumHours(h), outdoor = h.shielding > 0 || h.cleaning > 0;
+    const gcr = (cm) => K.radiation.gcrBaseMSvPerDay / (1 + cm / K.radiation.gcrShieldScaleCm);
+
+    if (pre.storm > 0) {
+      if (sh) add('good', 'You sheltered the crew during the solar storm.', 'Radiation dose today was only <b>' + rep.dose + ' mSv</b>.');
+      else add(rep.dose > 50 ? 'bad' : 'warn', 'You left the crew outside during the solar storm.', 'They absorbed <b>' + rep.dose + ' mSv</b> in one day.' + (post.shield > 0 ? ' Your shielding helped, but not enough.' : ' With no shielding, the storm hit at full strength.'));
+    } else if (sh) add(outdoor ? 'bad' : 'info', 'You sheltered the crew, but there was no storm.', outdoor ? 'The outdoor work you ordered (shielding, cleaning) did <b>not</b> happen.' : 'Nothing was lost, but sheltering is only worth it in a storm.');
+
+    if (!sh && h.shielding > 0) add('good', 'You spent ' + H(h.shielding) + ' building shielding.', 'Soil cover grew <b>+' + R1(post.shield - pre.shield) + ' cm</b> to ' + R1(post.shield) + ' cm. Background radiation is now <b>' + R1(gcr(post.shield)) + '</b> mSv/day (was ' + R1(gcr(pre.shield)) + ').' + (post.shield >= K.radiation.maxShieldCm ? ' This is the maximum.' : ''));
+
+    if (pre.dust) {
+      if (!sh && h.cleaning > 0) add(post.dust ? 'warn' : 'good', 'You spent ' + H(h.cleaning) + ' cleaning the dusty panels.', post.dust ? 'Not finished: ' + R1(post.cleaned) + ' of ' + K.repair.dustCleanHours + ' h done.' : 'Panels are clean. Solar output is back to <b>100%</b>.');
+      else add('bad', 'You did not clean the dusty panels.', 'Solar output stayed at only <b>60%</b>, so the battery charges more slowly.');
+    }
+    let rp = h.repair;
+    if (pre.broken) {
+      if (rp > 0) {
+        const use = Math.min(rp, K.repair.recyclerHours - pre.recProg); rp -= use;
+        add(post.broken ? 'warn' : 'good', 'You spent ' + H(use) + ' repairing the water recycler.', post.broken ? 'Progress: ' + R1(post.recProg) + ' of ' + K.repair.recyclerHours + ' h.' : 'The recycler works again and recovers used water.');
+      } else add('bad', 'You did not repair the broken water recycler.', 'Used water is not being recycled, so <b>clean water keeps dropping</b>.');
+    }
+    if (pre.leak) {
+      if (rp > 0) add(post.leak ? 'warn' : 'good', 'You spent ' + H(rp) + ' sealing the hull leak.', post.leak ? 'Progress: ' + R1(post.leakProg) + ' of ' + K.repair.leakHours + ' h.' : 'The leak is sealed.');
+      else add('bad', 'You did not repair the hull leak.', 'Air keeps escaping: about <b>1 kg of oxygen</b> was lost today.');
+      rp = 0;
+    }
+    if (h.repair > 0 && !pre.broken && !pre.leak) add('warn', 'You assigned ' + H(h.repair) + ' to repairs, but nothing was broken.', 'Those hours were wasted. They could have gone to shielding or rest.');
+
+    if (h.maintenance >= 4) add('good', 'You spent ' + H(h.maintenance) + ' on maintenance.', post.wear < 0.05 && h.maintenance > 4 ? 'Wear is already zero, so the extra hours were not needed.' : 'Equipment wear is held at <b>' + R1(post.wear) + '</b> out of 10.');
+    else add('warn', 'You spent only ' + H(h.maintenance) + ' on maintenance (about 4 h is needed).', 'Wear rose to <b>' + R1(post.wear) + '</b> out of 10. A worn recycler recovers less water.');
+
+    const dm = post.mat - pre.mat;
+    if (dm > 0.001) add('good', 'Crops got ' + H(h.greenhouse) + ' of care and ' + pct(used.greenhouseLevel) + '% light.', 'Crops grew to <b>' + pct(post.mat) + '%</b> maturity. Mature crops give food and oxygen and absorb CO2.');
+    else if (dm < -0.001) add('bad', 'Crops got ' + H(h.greenhouse) + ' of care and ' + pct(used.greenhouseLevel) + '% light.', 'Crops shrank to <b>' + pct(post.mat) + '%</b>. They need at least 4 h of care and enough power for the lights.');
+    else if (post.mat >= 0.999) add('info', 'The crops are fully grown.', 'They are producing the most food and oxygen they can.');
+    rep.notes.filter((x) => /crops died/i.test(x)).forEach((x) => add('bad', 'The crops had no light for too long.', x));
+
+    rep.notes.filter((x) => /Not enough power/.test(x)).forEach((x) => add('bad', 'Power demand was higher than supply.', x.replace('Not enough power. ', '') + ' Systems lower in your priority list are cut first.'));
+    add(post.battery < 150 ? 'bad' : post.battery < pre.battery ? 'info' : 'good', 'Power: the sun made ' + rep.power.solar + ' kWh and the outpost used ' + rep.power.used + ' kWh.', 'Battery went from <b>' + R1(pre.battery) + '</b> to <b>' + R1(post.battery) + '</b> kWh.' + (post.battery < 150 ? ' It is almost empty!' : ''));
+
+    if (total > NORMAL) add('bad', 'You ordered ' + H(total) + ' (a normal day is ' + NORMAL + ' h).', 'Overtime raised fatigue to <b>' + R1(post.fatigue) + '%</b>. Above 70% the crew gets hurt.');
+    else if (post.fatigue < pre.fatigue) add('good', 'You kept the crew to ' + H(total) + ' or less.', 'They rested. Fatigue fell from ' + R1(pre.fatigue) + '% to <b>' + R1(post.fatigue) + '%</b>.');
+
+    const keys = Object.keys(rep.damage);
+    keys.forEach((k) => add('bad', DMG_WHY[k][0], 'Crew health <b>-' + R1(rep.damage[k]) + '</b>. ' + DMG_WHY[k][1]));
+    if (!keys.length) add('good', 'Nobody was hurt today.', 'Crew health is <b>' + R1(post.health) + '%</b>' + (post.health > pre.health ? ' (recovering).' : '.'));
+    return L;
+  }
+  function showCons(title, lines, extra) {
+    const order = { bad: 0, warn: 1, good: 2, info: 3 };
+    const sorted = lines.slice().sort((a, b) => order[a.tone] - order[b.tone]);
+    let h = '<div class="sub" style="font-size:13px;margin:0 0 4px"><b style="color:var(--text)">' + title + '</b>' + (extra ? '<br>' + extra : '') + '</div>';
+    h += sorted.map((l) => '<div class="cl ' + l.tone + '"><div><div class="t">You did</div>' + l.did + '</div><div><div class="t">Result</div>' + l.res + '</div></div>').join('');
+    $('cons').innerHTML = h;
+    const sw = $('sceneWrap'); sw.classList.remove('flash'); void sw.offsetWidth; sw.classList.add('flash');
+  }
+
+  // ---------- day flow ----------
+  function runOneDay() {
+    orders.shelter = $('shelter').checked;
+    const used = JSON.parse(JSON.stringify(orders));
+    const pre = snap();
+    const rep = Sim.resolveDay(mission, orders);
+    const post = snap();
+    prevMat = pre.mat;
+    orders.shelter = false;
+    if (!mission.ended) histPush();
+    return { pre, post, used, rep };
+  }
+
+  $('endDay').onclick = () => {
+    const r = runOneDay();
+    baseline = r.pre;
+    showCons('Day ' + r.rep.day + ' result', explainDay(r.pre, r.post, r.used, r.rep));
+    if (mission.ended) return showEnd();
+    beginDay(false);
+  };
+
+  $('skip').onclick = () => {
+    let first = null, last = null, n = 0, notes = [], dmg = {};
+    for (let i = 0; i < 7; i++) {
+      const r = runOneDay(); n++; if (!first) first = r; last = r;
+      r.rep.notes.forEach((x) => { if (notes.indexOf(x) < 0) notes.push(x); });
+      Object.keys(r.rep.damage).forEach((k) => { dmg[k] = (dmg[k] || 0) + r.rep.damage[k]; });
+      if (mission.ended) break;
+      const sr = Sim.startDay(mission);
+      const fresh = sr.alerts.filter((a) => !lastAlertKeys[alertKey(a)]);
+      lastAlertKeys = {}; sr.alerts.forEach((a) => { lastAlertKeys[alertKey(a)] = 1; });
+      if (fresh.length || mission.today.spe > 0) break;
+    }
+    baseline = first.pre;
+    const lines = explainDay(last.pre, last.post, last.used, last.rep);
+    const extra = n > 1 ? 'You skipped <b>' + n + ' days</b> with the same orders (days ' + first.rep.day + ' to ' + last.rep.day + '). Below is the last day. Meter arrows show the change over the whole skip.' : '';
+    if (mission.ended) { showCons('Days ' + first.rep.day + ' to ' + last.rep.day, lines, extra); return showEnd(); }
+    showCons(n > 1 ? 'Skipped to day ' + mission.day : 'Day ' + last.rep.day + ' result', lines, extra);
+    render();
+  };
+
+  function showEnd() {
+    const d = Sim.debrief(mission), won = d.outcome === 'success';
+    let h = '<h2 class="' + (won ? 'win' : 'lose') + '">' + (won ? 'Mission complete' : 'Mission lost') + '</h2>';
+    h += '<p>' + (won ? 'The whole crew came home alive after ' + d.days + ' days.' : 'On day ' + d.days + ' the crew ' + (CAUSE[d.cause] || 'could not go on') + '.') + '</p>';
+    h += '<table><tr><th>Total radiation</th><td>' + d.totalDoseMSv + ' mSv</td></tr><tr><th>Final crew health</th><td>' + d.finalHealth + '%</td></tr></table>';
+    if (d.firstWarnings.length) {
+      h += '<h3 style="margin-top:14px;font-size:15px">Early warning signs you could have used</h3><ul>';
+      d.firstWarnings.forEach((w) => { h += '<li>Day ' + w.day + ': ' + w.msg + '</li>'; });
+      h += '</ul>';
+    }
+    h += '<div class="actions"><button class="primary" id="again">Restart mission</button><button id="toMenu">Choose another mission</button><button id="closeEnd">Look at the outpost</button></div>';
+    $('endBox').innerHTML = h;
+    $('endOv').classList.add('show');
+    $('again').onclick = () => start(scenarioId);
+    $('toMenu').onclick = () => { $('endOv').classList.remove('show'); $('menuOv').classList.add('show'); };
+    $('closeEnd').onclick = () => $('endOv').classList.remove('show');
+    render();
+  }
+
+  // ---------- first-time hints ----------
+  let hintsSeen = {}, hintQ = [], hintT = 0;
+  try { hintsSeen = JSON.parse(localStorage.getItem('cl_hints') || '{}'); } catch (e) { hintsSeen = {}; }
+  function hint(key) {
+    if (hintsSeen[key] || !HINTS[key] || hintQ.indexOf(key) >= 0) return;
+    hintsSeen[key] = 1; try { localStorage.setItem('cl_hints', JSON.stringify(hintsSeen)); } catch (e) {}
+    hintQ.push(key); if (!$('hint').classList.contains('show')) hintNext();
+  }
+  function hintNext() {
+    const el = $('hint'); clearTimeout(hintT);
+    if (!hintQ.length || tourIdx >= 0) { el.classList.remove('show'); return; }
+    const k = hintQ.shift(), t = HINTS[k];
+    el.innerHTML = '<b>' + t[0] + '</b>' + t[1] + '<br><button id="hintX">Got it</button>';
+    el.classList.add('show'); $('hintX').onclick = hintNext; hintT = setTimeout(hintNext, 14000);
+  }
+  function checkHints(st) {
+    if (mission.today.spe > 0) hint('storm');
+    if (mission.dust.active) hint('dust');
+    if (mission.recycler.broken) hint('recycler');
+    if (mission.leak.active) hint('leak');
+    if (!st.sunlit || st.daysToNight <= 3) hint('night');
+    if (mission.fatigue > 50) hint('fatigue');
+  }
+
+  // ---------- data sources panel ----------
+  function showSources() {
+    const S = SimConfig.SOURCES || [], count = (k) => S.filter((x) => x.status === k).length;
+    const real = count('sourced') + count('derived');
+    let t = '<h2>Where the numbers come from</h2><div class="sub" style="font-size:13px">Every key number in the game is listed here. <b style="color:var(--ok)">Sourced</b> = a real published NASA or measured value. <b style="color:var(--blue)">Derived</b> = calculated from a sourced value. <b style="color:var(--sun)">Scaled</b> = made smaller for gameplay from a real benchmark. <b style="color:var(--warn)">Assumption</b> = placeholder, no source yet. Right now: ' + real + ' sourced or derived, ' + count('scaled') + ' scaled, ' + count('assumption') + ' assumptions.</div>';
+    t += '<table><tr><th>What</th><th>In the game</th><th>Status</th><th>Source</th></tr>';
+    S.forEach((x) => {
+      t += '<tr><td>' + x.label + '</td><td>' + x.value + '</td><td><span class="stat ' + x.status + '">' + x.status.toUpperCase() + '</span></td><td>' + x.source + (x.url ? ' <a href="' + x.url + '" target="_blank" rel="noopener">link</a>' : '') + '</td></tr>';
+    });
+    t += '</table><div class="note">' + (SimConfig.AI_NOTE || '') + '</div>';
+    t += '<div class="actions"><button class="primary" id="srcClose">Close</button></div>';
+    $('srcBox').innerHTML = t; $('srcOv').classList.add('show');
+    $('srcClose').onclick = () => $('srcOv').classList.remove('show');
+  }
+  $('srcBtn').onclick = showSources;
+  $('srcOv').onclick = (e) => { if (e.target === $('srcOv')) $('srcOv').classList.remove('show'); };
+
+  // ---------- guided tour ----------
+  function tourClear() { document.querySelectorAll('.tour-hl').forEach((e) => e.classList.remove('tour-hl')); }
+  function tourStart() { tourIdx = 0; tourShow(); }
+  function tourEnd() {
+    tourIdx = -1; tourClear(); $('tour').classList.remove('show'); hintNext();
+    try { localStorage.setItem('cl_tour_seen', '1'); } catch (e) {}
+  }
+  function tourShow() {
+    tourClear();
+    const s = TOUR[tourIdx], el = $('tour');
+    el.innerHTML = '<h3>' + s.title + '</h3><p>' + s.text + '</p><div class="nav"><span class="step">' + (tourIdx + 1) + ' of ' + TOUR.length + '</span><span style="display:flex;gap:8px"><button id="tSkip">Close</button>' +
+      (tourIdx > 0 ? '<button id="tBack">Back</button>' : '') + '<button class="primary" id="tNext">' + (tourIdx === TOUR.length - 1 ? 'Finish' : 'Next') + '</button></span></div>';
+    el.classList.add('show');
+    $('tSkip').onclick = tourEnd;
+    if ($('tBack')) $('tBack').onclick = () => { tourIdx--; tourShow(); };
+    $('tNext').onclick = () => { if (tourIdx >= TOUR.length - 1) tourEnd(); else { tourIdx++; tourShow(); } };
+    if (s.sel) { const t = document.querySelector(s.sel); if (t) { t.classList.add('tour-hl'); const r = t.getBoundingClientRect(); const big = r.height > window.innerHeight * 0.6; t.scrollIntoView({ block: big ? 'start' : 'center', behavior: 'smooth' }); } }
+  }
+
+  $('detailsToggle').onchange = (e) => document.body.classList.toggle('details', e.target.checked);
+  $('restartBtn').onclick = () => { if (scenarioId && confirm('Restart this mission from day 1?')) start(scenarioId); };
+  $('menuBtn').onclick = () => $('menuOv').classList.add('show');
+  $('helpBtn').onclick = () => { tourStart(); };
+  buildMenu();
+  Scene.init($('scene'));
+  window.__cl = { get mission() { return mission; } }; // handy for testing in the browser console
+})();
+</script>
+</body>
+</html>
