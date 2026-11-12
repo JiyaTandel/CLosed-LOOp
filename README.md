@@ -2,7 +2,7 @@
 
 **NASA Space Apps Challenge 2026 | Local event: Surat | Challenge: Junior Astronaut Mission Trainer**
 
-**Play it here:** [PASTE YOUR GITHUB PAGES LINK]
+**Play it here:** https://jiyatandel.github.io/CLosed-LOOp/
 
 CLosed LOOp is a realistic, turn-based, single-player lunar outpost game for school-age space enthusiasts. You are mission control for four astronauts living on the Moon. Every day you decide how to spend their working hours, which systems get power first, and whether the crew should shelter from radiation. The goal is to keep the crew alive until the end of the mission.
 
@@ -64,4 +64,4 @@ Other storm sizes in the game are gameplay-scaled fractions of the August 1972 b
 This project was built by a student working with Claude (Anthropic's AI assistant). Claude helped write and test the simulation engine, the dashboard code and the outpost renderer, helped find and read the NASA technical reports, and helped draft documentation. The project idea, challenge choice, design decisions and direction come from the team. All sourced values were checked against the cited documents.
 
 ## Team
-CLosed LOOp: [YOUR NAME / TEAM MEMBERS]
+CLosed LOOp: Jiya Tandel
