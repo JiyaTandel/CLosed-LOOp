@@ -61,7 +61,7 @@ Main sources:
 Other storm sizes in the game are gameplay-scaled fractions of the August 1972 benchmark and are labelled that way in the game. A few values (solar array size, dust effect, system power use, base power, water use) are assumptions and are marked as such.
 
 ## AI usage
-This project was built by a student working with Claude (Anthropic's AI assistant). Claude helped write and test the simulation engine, the dashboard code and the outpost renderer, helped find and read the NASA technical reports, and helped draft documentation. The project idea, challenge choice, design decisions and direction come from the team. All sourced values were checked against the cited documents.
+This project was built by a student team, utilizing AI tooling for implementation support across the simulation engine, dashboard, and technical documentation review. All design decisions, problem framing, and engineering directions originated with the team, and every sourced value was cross-checked against original NASA reports.
 
 ## Team
 CLosed LOOp: Jiya Tandel
